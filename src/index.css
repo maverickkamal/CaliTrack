@@ -1,0 +1,261 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Syne', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Work Sans', sans-serif;
+
+  --color-bg: #1a1a1a;
+  --color-surface: #404040;
+  --color-surface-hover: #4a4a4a;
+  --color-primary: #7CB89A;
+  --color-primary-hover: #6aa888;
+  --color-accent-red: #ff6b6b;
+  --color-accent-amber: #ffb84d;
+  --color-fg: #f7f4ed;
+  --color-muted: rgba(247, 244, 237, 0.45);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 12px 40px -16px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 16px 48px -12px rgba(0, 0, 0, 0.55);
+}
+
+:root {
+  color-scheme: dark;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 180ms;
+  --duration-normal: 280ms;
+}
+
+.light {
+  --color-bg: #f7f4ed;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0ede6;
+  --color-primary: #006B3D;
+  --color-primary-hover: #005a33;
+  --color-accent-red: #c91f1f;
+  --color-accent-amber: #8a5500;
+  --color-fg: #1a1a1a;
+  --color-muted: #BFBFBF;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 8px 32px -12px rgba(0, 0, 0, 0.12);
+  --shadow-card-hover: 0 1px 0 rgba(255, 255, 255, 1) inset, 0 12px 40px -8px rgba(0, 0, 0, 0.14);
+  color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-fg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(120% 80% at 50% -20%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 55%),
+    radial-gradient(80% 50% at 100% 100%, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 45%);
+  background-attachment: fixed;
+}
+
+.light body {
+  background-image:
+    radial-gradient(100% 70% at 50% -10%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 50%),
+    radial-gradient(70% 40% at 0% 100%, rgba(0, 107, 61, 0.04), transparent 50%);
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+}
+
+/* Focus — visible keyboard path only */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 85%, white);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+@utility text-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+@utility text-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+/* Surfaces — depth without generic “AI card grid” */
+@utility card-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  transition:
+    box-shadow var(--duration-normal) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.card-surface-interactive {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  transition:
+    box-shadow var(--duration-normal) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.card-surface-interactive:active {
+  transform: scale(0.992);
+}
+
+@media (hover: hover) {
+  .card-surface-interactive:hover {
+    box-shadow: var(--shadow-card-hover);
+    border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  }
+}
+
+/* Primary actions — press feedback (transform only) */
+@utility btn-press {
+  transition: transform var(--duration-fast) var(--ease-out-expo), background-color var(--duration-fast) var(--ease-out-expo), box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Route transition */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility page-enter {
+  animation: page-enter var(--duration-normal) var(--ease-out-expo) both;
+}
+
+/* Staggered list / section reveals */
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-fade > * {
+  animation: stagger-fade var(--duration-normal) var(--ease-out-expo) both;
+}
+
+.stagger-fade > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-fade > *:nth-child(2) { animation-delay: 55ms; }
+.stagger-fade > *:nth-child(3) { animation-delay: 110ms; }
+.stagger-fade > *:nth-child(4) { animation-delay: 165ms; }
+.stagger-fade > *:nth-child(5) { animation-delay: 220ms; }
+.stagger-fade > *:nth-child(6) { animation-delay: 275ms; }
+.stagger-fade > *:nth-child(7) { animation-delay: 330ms; }
+.stagger-fade > *:nth-child(8) { animation-delay: 385ms; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up-panel {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes sheet-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes check-in {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@utility animate-fade-in {
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
+}
+
+@utility animate-slide-up {
+  animation: slide-up-panel 0.38s var(--ease-out-expo) both;
+}
+
+@utility animate-backdrop-in {
+  animation: sheet-backdrop-in 0.22s var(--ease-out-expo) both;
+}
+
+@utility animate-scale-pulse {
+  animation: scale-pulse 0.45s var(--ease-out-expo);
+}
+
+@utility animate-check-in {
+  animation: check-in 0.22s var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-fade > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .page-enter {
+    animation: none !important;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .card-surface-interactive:active,
+  .btn-press:active {
+    transform: none;
+  }
+}
