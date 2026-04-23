@@ -3,8 +3,9 @@ import { useUserStore } from '../stores/userStore'
 import { useSessionStore } from '../stores/sessionStore'
 import { useProgramStore } from '../stores/programStore'
 import { useExerciseStore } from '../stores/exerciseStore'
+import { usePlanStore } from '../stores/planStore'
 import { Coachmarks } from '../components/Coachmarks'
-import { Play, Flame, TrendingUp, ChevronRight, Settings } from 'lucide-react'
+import { Play, Flame, TrendingUp, ChevronRight, Settings, RotateCcw } from 'lucide-react'
 import { MOOD_MAP } from '../types'
 
 function getStreak(sessions: { date: string }[], trainingDaysPerWeek: number): number {
@@ -59,8 +60,19 @@ export function Home() {
   const getProgramById = useProgramStore((s) => s.getProgramById)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
 
+  const getPlanByIdFn = usePlanStore((s) => s.getPlanById)
+
   const activeUp = getActiveUserProgram()
   const activeProgram = activeUp ? getProgramById(activeUp.programId) : undefined
+
+  const pendingSession = (() => {
+    try {
+      const raw = sessionStorage.getItem('calitrack-active-session')
+      if (!raw) return null
+      const data = JSON.parse(raw)
+      return data as { sessionId: string; planId?: string; programId?: string; programDayId?: string; startTime: number }
+    } catch { return null }
+  })()
 
   const currentDay = activeProgram && activeUp
     ? activeProgram.weeks
@@ -76,6 +88,40 @@ export function Home() {
   return (
     <div className="px-4 pt-6 pb-4">
       <Coachmarks />
+
+      {/* Resume active session banner */}
+      {pendingSession && (
+        <button
+          type="button"
+          onClick={() => {
+            const state: Record<string, string | boolean> = {}
+            if (pendingSession.planId) state.planId = pendingSession.planId
+            if (pendingSession.programId) state.programId = pendingSession.programId
+            if (pendingSession.programDayId) state.programDayId = pendingSession.programDayId
+            if (!pendingSession.planId && !pendingSession.programId) state.free = true
+            navigate(`/log/${pendingSession.sessionId}`, { state })
+          }}
+          className="w-full p-4 rounded-2xl bg-[var(--color-accent-amber)]/10 border border-[var(--color-accent-amber)]/25 flex items-center gap-3 mb-1 active:scale-[0.99] transition-transform"
+        >
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-amber)]/20 flex items-center justify-center shrink-0">
+            <RotateCcw size={18} className="text-[var(--color-accent-amber)]" />
+          </div>
+          <div className="text-left flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[var(--color-accent-amber)]" style={{ fontFamily: 'var(--font-heading)' }}>
+              Session in progress
+            </p>
+            <p className="text-xs text-[var(--color-muted)] truncate">
+              {pendingSession.planId
+                ? getPlanByIdFn(pendingSession.planId)?.name ?? 'Plan session'
+                : pendingSession.programId
+                  ? 'Program session'
+                  : 'Free session'}
+              {' · '}Started {Math.round((Date.now() - pendingSession.startTime) / 60000)}min ago
+            </p>
+          </div>
+          <ChevronRight size={18} className="text-[var(--color-accent-amber)] shrink-0" />
+        </button>
+      )}
 
       <div className="space-y-5 stagger-fade">
       {/* Header */}

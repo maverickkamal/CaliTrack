@@ -18,6 +18,42 @@ interface ExerciseGroup {
   target?: { targetSets: number; targetReps: string; restSeconds: number }
 }
 
+interface PersistedSession {
+  sessionId: string
+  groups: ExerciseGroup[]
+  startTime: number
+  planId?: string
+  programId?: string
+  programDayId?: string
+  isFree?: boolean
+}
+
+const STORAGE_KEY = 'calitrack-active-session'
+
+function loadPersistedSession(sessionId: string): PersistedSession | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw) as PersistedSession
+    if (data.sessionId === sessionId) return data
+    return null
+  } catch {
+    return null
+  }
+}
+
+function saveSession(data: PersistedSession) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch { /* sessionStorage full or unavailable */ }
+}
+
+function clearPersistedSession() {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch { /* ignore */ }
+}
+
 export function ActiveSession() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
@@ -33,10 +69,16 @@ export function ActiveSession() {
 
   const state = location.state as { planId?: string; programId?: string; programDayId?: string; free?: boolean } | null
 
-  const plan = state?.planId ? getPlanById(state.planId) : undefined
-  const program = state?.programId ? getProgramById(state.programId) : undefined
-  const programDay = program && state?.programDayId
-    ? program.weeks.flatMap((w) => w.days).find((d) => d.id === state.programDayId)
+  const persisted = sessionId ? loadPersistedSession(sessionId) : null
+
+  const effectivePlanId = persisted?.planId ?? state?.planId
+  const effectiveProgramId = persisted?.programId ?? state?.programId
+  const effectiveProgramDayId = persisted?.programDayId ?? state?.programDayId
+
+  const plan = effectivePlanId ? getPlanById(effectivePlanId) : undefined
+  const program = effectiveProgramId ? getProgramById(effectiveProgramId) : undefined
+  const programDay = program && effectiveProgramDayId
+    ? program.weeks.flatMap((w) => w.days).find((d) => d.id === effectiveProgramDayId)
     : undefined
 
   const initialExercises: PlanExercise[] = plan?.exercises ?? programDay?.exercises?.map((e, i) => ({
@@ -47,8 +89,9 @@ export function ActiveSession() {
     restSeconds: e.restSeconds,
   })) ?? []
 
-  const [groups, setGroups] = useState<ExerciseGroup[]>(() =>
-    initialExercises.map((pe) => ({
+  const [groups, setGroups] = useState<ExerciseGroup[]>(() => {
+    if (persisted?.groups) return persisted.groups
+    return initialExercises.map((pe) => ({
       exerciseId: pe.exerciseId,
       target: { targetSets: pe.targetSets, targetReps: pe.targetReps, restSeconds: pe.restSeconds },
       sets: Array.from({ length: pe.targetSets }, (_, i) => ({
@@ -60,10 +103,13 @@ export function ActiveSession() {
         completed: false,
         timestamp: '',
       })),
-    })),
-  )
+    }))
+  })
 
-  const [elapsed, setElapsed] = useState(0)
+  const startTimeRef = useRef(persisted?.startTime ?? Date.now())
+  const [elapsed, setElapsed] = useState(() =>
+    Math.floor((Date.now() - startTimeRef.current) / 1000),
+  )
   const [pickerOpen, setPickerOpen] = useState(false)
   const [repCounterOpen, setRepCounterOpen] = useState(false)
   const [repCounterTarget, setRepCounterTarget] = useState<{ groupIdx: number; setIdx: number } | null>(null)
@@ -74,12 +120,24 @@ export function ActiveSession() {
   const [notes, setNotes] = useState('')
   const [prs, setPrs] = useState<string[]>([])
 
-  const startTimeRef = useRef(Date.now())
-
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000)), 1000)
     return () => clearInterval(iv)
   }, [])
+
+  useEffect(() => {
+    if (!sessionId || showSummary) return
+    const data: PersistedSession = {
+      sessionId,
+      groups,
+      startTime: startTimeRef.current,
+      planId: effectivePlanId,
+      programId: effectiveProgramId,
+      programDayId: effectiveProgramDayId,
+      isFree: state?.free,
+    }
+    saveSession(data)
+  }, [groups, sessionId, showSummary, effectivePlanId, effectiveProgramId, effectiveProgramDayId, state?.free])
 
   const sessionLabel = plan?.name ?? programDay?.label ?? 'Free Session'
 
@@ -207,6 +265,12 @@ export function ActiveSession() {
     }
     addSession(session)
     if (programDay) completeDay(programDay.id)
+    clearPersistedSession()
+    navigate('/')
+  }
+
+  function handleDiscard() {
+    clearPersistedSession()
     navigate('/')
   }
 
@@ -296,7 +360,7 @@ export function ActiveSession() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2" aria-label="Back">
+          <button onClick={handleDiscard} className="p-2 -ml-2" aria-label="Back">
             <ArrowLeft size={20} />
           </button>
           <div>

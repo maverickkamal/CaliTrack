@@ -40,8 +40,16 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
   const [totalSeconds, setTotalSeconds] = useState(defaultSeconds)
   const [remaining, setRemaining] = useState(defaultSeconds)
   const [running, setRunning] = useState(false)
+  const [isDone, setIsDone] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const hasNotifiedRef = useRef(false)
+
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
 
   const requestNotificationPermission = useCallback(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -54,39 +62,61 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
       setTotalSeconds(defaultSeconds)
       setRemaining(defaultSeconds)
       setRunning(true)
+      setIsDone(false)
       hasNotifiedRef.current = false
       requestNotificationPermission()
+    } else {
+      clearTimer()
+      setRunning(false)
+      setIsDone(false)
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [open, defaultSeconds, requestNotificationPermission])
+    return clearTimer
+  }, [open, defaultSeconds, requestNotificationPermission, clearTimer])
 
   useEffect(() => {
-    if (running && remaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemaining((r) => r - 1)
-      }, 1000)
-    } else if (remaining <= 0 && running) {
+    clearTimer()
+
+    if (!running || isDone) return
+
+    if (remaining <= 0) {
       setRunning(false)
+      setIsDone(true)
       if (!hasNotifiedRef.current) {
         hasNotifiedRef.current = true
         playTone()
         vibrate()
         notifyComplete()
       }
+      return
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [running, remaining])
 
-  const progress = totalSeconds > 0 ? remaining / totalSeconds : 0
+    intervalRef.current = setInterval(() => {
+      setRemaining((r) => {
+        const next = r - 1
+        if (next <= 0) {
+          clearTimer()
+          setRunning(false)
+          setIsDone(true)
+          if (!hasNotifiedRef.current) {
+            hasNotifiedRef.current = true
+            playTone()
+            vibrate()
+            notifyComplete()
+          }
+          return 0
+        }
+        return next
+      })
+    }, 1000)
+
+    return clearTimer
+  }, [running, isDone, remaining <= 0, clearTimer])
+
+  const progress = totalSeconds > 0 ? Math.max(0, remaining / totalSeconds) : 0
   const isWarning = remaining <= 10 && remaining > 0
-  const isDone = remaining <= 0
 
-  const mins = Math.floor(Math.abs(remaining) / 60)
-  const secs = Math.abs(remaining) % 60
+  const mins = Math.floor(remaining / 60)
+  const secs = remaining % 60
 
   const circumference = 2 * Math.PI * 54
   const strokeDashoffset = circumference * (1 - progress)
@@ -97,8 +127,15 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
       ? 'var(--color-accent-red)'
       : 'var(--color-accent-amber)'
 
+  function handleClose() {
+    clearTimer()
+    setRunning(false)
+    setIsDone(false)
+    onClose()
+  }
+
   return (
-    <Sheet open={open} onClose={onClose} title="Rest Timer">
+    <Sheet open={open} onClose={handleClose} title="Rest Timer">
       <div className="flex flex-col items-center py-4 gap-5">
         <div className="relative w-36 h-36">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -123,16 +160,16 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
           </div>
         </div>
 
-        {!isDone && (
+        {!isDone && running && (
           <div className="flex gap-3">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-5 py-2.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] text-sm font-medium"
             >
               Skip
             </button>
             <button
-              onClick={() => setRemaining((r) => r + 30)}
+              onClick={() => { setRemaining((r) => r + 30); setTotalSeconds((t) => t + 30) }}
               className="px-5 py-2.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] text-sm font-medium"
             >
               +30s
@@ -142,8 +179,8 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
 
         {isDone && (
           <button
-            onClick={onClose}
-            className="w-full max-w-xs py-3 bg-[var(--color-primary)] text-white rounded-xl text-base font-semibold"
+            onClick={handleClose}
+            className="w-full max-w-xs py-3 bg-[var(--color-primary)] text-white rounded-xl text-base font-semibold active:scale-[0.98] transition-transform"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
             Continue
@@ -155,7 +192,7 @@ export function RestTimer({ open, onClose, defaultSeconds }: RestTimerProps) {
             {presets.map((s) => (
               <button
                 key={s}
-                onClick={() => { setTotalSeconds(s); setRemaining(s); setRunning(true) }}
+                onClick={() => { setTotalSeconds(s); setRemaining(s); setRunning(true); setIsDone(false) }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                   totalSeconds === s
                     ? 'bg-[var(--color-primary)] text-white'

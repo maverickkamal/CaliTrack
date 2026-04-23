@@ -50,7 +50,7 @@ export function ExercisePicker({ open, onClose, onSelect }: ExercisePickerProps)
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Add Exercise">
+    <Sheet open={open} onClose={onClose} title="Add Exercise" position="bottom">
       <div className="relative mb-3">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" />
         <input
