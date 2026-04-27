@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProgramStore } from '../stores/programStore'
-import { ChevronRight, CheckCircle, Pause, Play } from 'lucide-react'
+import { ChevronRight, CheckCircle, Pause, Play, Plus, Pencil, Trash2, RotateCcw } from 'lucide-react'
 
 export function Programs() {
   const navigate = useNavigate()
@@ -9,6 +10,11 @@ export function Programs() {
   const getActiveUserProgram = useProgramStore((s) => s.getActiveUserProgram)
   const pauseProgram = useProgramStore((s) => s.pauseProgram)
   const resumeProgram = useProgramStore((s) => s.resumeProgram)
+  const deleteProgram = useProgramStore((s) => s.deleteProgram)
+  const resetToBuiltIn = useProgramStore((s) => s.resetToBuiltIn)
+  const isBuiltIn = useProgramStore((s) => s.isBuiltIn)
+  const hasOverride = useProgramStore((s) => s.hasOverride)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   const activeUp = getActiveUserProgram()
 
@@ -18,26 +24,28 @@ export function Programs() {
 
   return (
     <div className="px-4 pt-6 pb-4 animate-fade-in">
-      <h1 className="text-2xl font-bold mb-5" style={{ fontFamily: 'var(--font-display)' }}>Programs</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>Programs</h1>
+      </div>
 
       {/* Active enrollment */}
       {activeUp && (() => {
         const prog = programs.find((p) => p.id === activeUp.programId)
         if (!prog) return null
         const totalDays = prog.weeks.reduce((a, w) => a + w.days.length, 0)
-        const completedPct = Math.round((activeUp.completedDays.length / totalDays) * 100)
+        const completedPct = totalDays > 0 ? Math.round((activeUp.completedDays.length / totalDays) * 100) : 0
         return (
           <div className="p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] mb-6">
             <div className="flex items-center justify-between mb-3">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-[var(--color-primary)] font-medium uppercase tracking-wider" style={{ fontFamily: 'var(--font-heading)' }}>
                   Active Program
                 </p>
-                <p className="text-lg font-semibold mt-0.5" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
+                <p className="text-lg font-semibold mt-0.5 truncate" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
               </div>
               <button
                 onClick={() => pauseProgram(activeUp.id)}
-                className="p-2 rounded-lg text-[var(--color-muted)] hover:bg-[var(--color-bg)]"
+                className="p-2 rounded-lg text-[var(--color-muted)] hover:bg-[var(--color-bg)] shrink-0"
                 aria-label="Pause program"
               >
                 <Pause size={18} />
@@ -70,13 +78,13 @@ export function Programs() {
           if (!prog) return null
           return (
             <div key={up.id} className="p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] mb-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
                 <p className="text-xs text-[var(--color-muted)]">Paused · Week {up.currentWeek}</p>
               </div>
               <button
                 onClick={() => resumeProgram(up.id)}
-                className="p-2 rounded-lg text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10"
+                className="p-2 rounded-lg text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 shrink-0"
                 aria-label="Resume"
               >
                 <Play size={18} />
@@ -93,11 +101,11 @@ export function Programs() {
           if (!prog) return null
           return (
             <div key={up.id} className="p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] mb-3 flex items-center justify-between opacity-60">
-              <div>
-                <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
                 <p className="text-xs text-[var(--color-muted)]">Completed</p>
               </div>
-              <CheckCircle size={18} className="text-[var(--color-primary)]" />
+              <CheckCircle size={18} className="text-[var(--color-primary)] shrink-0" />
             </div>
           )
         })}
@@ -107,40 +115,114 @@ export function Programs() {
       <div className="space-y-3">
         {programs.map((prog) => {
           const enrollment = getEnrollment(prog.id)
+          const builtIn = isBuiltIn(prog.id)
+          const overridden = hasOverride(prog.id)
+          const isConfirming = confirmDelete === prog.id
           return (
-            <button
+            <div
               key={prog.id}
-              onClick={() => navigate(`/programs/${prog.id}`)}
-              className="w-full p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] text-left flex items-center justify-between hover:bg-[var(--color-surface-hover)] transition-colors"
+              className="relative p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
-                  {enrollment && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)]">
-                      {enrollment.status}
+              <button
+                onClick={() => navigate(`/programs/${prog.id}`)}
+                className="w-full text-left flex items-center justify-between"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <p className="text-base font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{prog.name}</p>
+                    {enrollment && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)]">
+                        {enrollment.status}
+                      </span>
+                    )}
+                    {!builtIn && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent-amber)]/20 text-[var(--color-accent-amber)]">
+                        custom
+                      </span>
+                    )}
+                    {builtIn && overridden && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent-amber)]/15 text-[var(--color-accent-amber)]">
+                        edited
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-[var(--color-muted)] line-clamp-2">{prog.description || 'No description'}</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
+                      prog.difficulty === 'beginner'
+                        ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
+                        : prog.difficulty === 'intermediate'
+                          ? 'bg-[var(--color-accent-amber)]/20 text-[var(--color-accent-amber)]'
+                          : 'bg-[var(--color-accent-red)]/20 text-[var(--color-accent-red)]'
+                    }`}>
+                      {prog.difficulty}
                     </span>
-                  )}
+                    <span className="text-xs text-[var(--color-muted)]">{prog.durationWeeks}w · {prog.daysPerWeek}d/w</span>
+                  </div>
                 </div>
-                <p className="text-sm text-[var(--color-muted)] line-clamp-2">{prog.description}</p>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${
-                    prog.difficulty === 'beginner'
-                      ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
-                      : prog.difficulty === 'intermediate'
-                        ? 'bg-[var(--color-accent-amber)]/20 text-[var(--color-accent-amber)]'
-                        : 'bg-[var(--color-accent-red)]/20 text-[var(--color-accent-red)]'
-                  }`}>
-                    {prog.difficulty}
-                  </span>
-                  <span className="text-xs text-[var(--color-muted)]">{prog.durationWeeks}w · {prog.daysPerWeek}d/w</span>
-                </div>
+                <ChevronRight size={18} className="text-[var(--color-muted)] ml-2 shrink-0" />
+              </button>
+
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => navigate(`/programs/${prog.id}/edit`)}
+                  className="flex-1 py-2 rounded-lg bg-[var(--color-primary)] text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[var(--color-primary-hover)] active:scale-[0.99] transition-all"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  <Pencil size={13} /> Edit
+                </button>
+                {builtIn && overridden && (
+                  <button
+                    onClick={() => resetToBuiltIn(prog.id)}
+                    className="px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs text-[var(--color-muted)] font-medium hover:text-[var(--color-fg)] flex items-center gap-1.5"
+                    aria-label="Reset to original"
+                    title="Reset to original"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
+                {!builtIn && (
+                  <button
+                    onClick={() => setConfirmDelete(prog.id)}
+                    className="px-3 py-2 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-xs text-[var(--color-muted)] hover:text-[var(--color-accent-red)] hover:border-[var(--color-accent-red)]/30 flex items-center gap-1.5"
+                    aria-label="Delete program"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
               </div>
-              <ChevronRight size={18} className="text-[var(--color-muted)] ml-2 flex-shrink-0" />
-            </button>
+
+              {isConfirming && (
+                <div className="absolute inset-0 bg-[var(--color-surface)] rounded-2xl flex flex-col items-center justify-center gap-3 z-10 px-4 text-center">
+                  <p className="text-sm">Delete this program?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { deleteProgram(prog.id); setConfirmDelete(null) }}
+                      className="px-4 py-2 bg-[var(--color-accent-red)] text-white rounded-lg text-sm"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(null)}
+                      className="px-4 py-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
+
+      <button
+        onClick={() => navigate('/programs/new')}
+        className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shadow-lg hover:bg-[var(--color-primary-hover)] active:scale-95 transition-all z-40"
+        aria-label="Create new program"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   )
 }

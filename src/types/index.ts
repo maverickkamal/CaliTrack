@@ -33,14 +33,6 @@ export interface PlanExercise {
   notes?: string
 }
 
-export interface Plan {
-  id: string
-  name: string
-  exercises: PlanExercise[]
-  createdAt: string
-  updatedAt: string
-}
-
 export interface SessionSet {
   id: string
   exerciseId: string

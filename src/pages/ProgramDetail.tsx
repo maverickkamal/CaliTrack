@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useProgramStore } from '../stores/programStore'
 import { useExerciseStore } from '../stores/exerciseStore'
-import { ArrowLeft, Play, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Play, CheckCircle, Pencil } from 'lucide-react'
 
 export function ProgramDetail() {
   const { programId } = useParams<{ programId: string }>()
@@ -9,6 +9,8 @@ export function ProgramDetail() {
   const getProgramById = useProgramStore((s) => s.getProgramById)
   const enrollInProgram = useProgramStore((s) => s.enrollInProgram)
   const userPrograms = useProgramStore((s) => s.userPrograms)
+  const isBuiltIn = useProgramStore((s) => s.isBuiltIn)
+  const hasOverride = useProgramStore((s) => s.hasOverride)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
 
   const program = getProgramById(programId!)
@@ -21,18 +23,30 @@ export function ProgramDetail() {
     </div>
   )
 
+  const builtIn = isBuiltIn(program.id)
+  const overridden = hasOverride(program.id)
+
   return (
     <div className="px-4 pt-6 pb-4 animate-fade-in">
       <div className="flex items-center gap-3 mb-5">
         <button onClick={() => navigate('/programs')} className="p-2 -ml-2" aria-label="Back">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>{program.name}</h1>
+        <h1 className="text-xl font-bold flex-1 truncate" style={{ fontFamily: 'var(--font-display)' }}>{program.name}</h1>
+        <button
+          onClick={() => navigate(`/programs/${program.id}/edit`)}
+          className="px-3 py-1.5 rounded-lg bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-xs font-semibold hover:bg-[var(--color-primary)]/20 transition-colors flex items-center gap-1 shrink-0"
+          aria-label="Edit program"
+        >
+          <Pencil size={14} /> Edit
+        </button>
       </div>
 
-      <p className="text-sm text-[var(--color-muted)] mb-4">{program.description}</p>
+      {program.description && (
+        <p className="text-sm text-[var(--color-muted)] mb-4">{program.description}</p>
+      )}
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         <span className={`text-xs px-3 py-1 rounded-full capitalize ${
           program.difficulty === 'beginner'
             ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
@@ -48,6 +62,16 @@ export function ProgramDetail() {
         <span className="text-xs px-3 py-1 rounded-full bg-[var(--color-surface)] text-[var(--color-muted)]">
           {program.daysPerWeek} days/week
         </span>
+        {!builtIn && (
+          <span className="text-xs px-3 py-1 rounded-full bg-[var(--color-accent-amber)]/20 text-[var(--color-accent-amber)]">
+            custom
+          </span>
+        )}
+        {builtIn && overridden && (
+          <span className="text-xs px-3 py-1 rounded-full bg-[var(--color-accent-amber)]/15 text-[var(--color-accent-amber)]">
+            edited
+          </span>
+        )}
       </div>
 
       {!enrollment && (
@@ -80,17 +104,17 @@ export function ProgramDetail() {
                         : 'bg-[var(--color-surface)] border-[var(--color-border)]'
                     } ${isCompleted ? 'opacity-60' : ''}`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium" style={{ fontFamily: 'var(--font-heading)' }}>{day.label}</p>
-                      {isCompleted && <CheckCircle size={16} className="text-[var(--color-primary)]" />}
-                      {isCurrent && !isCompleted && (
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <p className="text-sm font-medium truncate" style={{ fontFamily: 'var(--font-heading)' }}>{day.label}</p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isCompleted && <CheckCircle size={16} className="text-[var(--color-primary)]" />}
                         <button
                           onClick={() => navigate('/log/new', { state: { programId: program.id, programDayId: day.id } })}
                           className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-primary)] text-white rounded-lg text-xs font-medium"
                         >
                           <Play size={12} fill="white" /> Start
                         </button>
-                      )}
+                      </div>
                     </div>
                     <div className="space-y-0.5">
                       {day.exercises.map((e, i) => (
@@ -107,7 +131,7 @@ export function ProgramDetail() {
         ))}
         {program.weeks.length > 2 && (
           <p className="text-sm text-[var(--color-muted)] text-center">
-            +{program.weeks.length - 2} more weeks
+            +{program.weeks.length - 2} more weeks (same structure)
           </p>
         )}
       </div>

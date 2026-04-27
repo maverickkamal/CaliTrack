@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useSessionStore } from '../stores/sessionStore'
-import { usePlanStore } from '../stores/planStore'
 import { useProgramStore } from '../stores/programStore'
 import { useExerciseStore } from '../stores/exerciseStore'
 import { useUserStore } from '../stores/userStore'
@@ -22,7 +21,6 @@ interface PersistedSession {
   sessionId: string
   groups: ExerciseGroup[]
   startTime: number
-  planId?: string
   programId?: string
   programDayId?: string
   isFree?: boolean
@@ -60,28 +58,25 @@ export function ActiveSession() {
   const location = useLocation()
   const addSession = useSessionStore((s) => s.addSession)
   const detectPRs = useSessionStore((s) => s.detectPRs)
-  const getPlanById = usePlanStore((s) => s.getPlanById)
   const getProgramById = useProgramStore((s) => s.getProgramById)
   const completeDay = useProgramStore((s) => s.completeDay)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
   const autoRestTimer = useUserStore((s) => s.autoRestTimer)
   const defaultRestSeconds = useUserStore((s) => s.defaultRestSeconds)
 
-  const state = location.state as { planId?: string; programId?: string; programDayId?: string; free?: boolean } | null
+  const state = location.state as { programId?: string; programDayId?: string; free?: boolean } | null
 
   const persisted = sessionId ? loadPersistedSession(sessionId) : null
 
-  const effectivePlanId = persisted?.planId ?? state?.planId
   const effectiveProgramId = persisted?.programId ?? state?.programId
   const effectiveProgramDayId = persisted?.programDayId ?? state?.programDayId
 
-  const plan = effectivePlanId ? getPlanById(effectivePlanId) : undefined
   const program = effectiveProgramId ? getProgramById(effectiveProgramId) : undefined
   const programDay = program && effectiveProgramDayId
     ? program.weeks.flatMap((w) => w.days).find((d) => d.id === effectiveProgramDayId)
     : undefined
 
-  const initialExercises: PlanExercise[] = plan?.exercises ?? programDay?.exercises?.map((e, i) => ({
+  const initialExercises: PlanExercise[] = programDay?.exercises?.map((e, i) => ({
     exerciseId: e.exerciseId,
     order: i,
     targetSets: e.targetSets,
@@ -131,15 +126,14 @@ export function ActiveSession() {
       sessionId,
       groups,
       startTime: startTimeRef.current,
-      planId: effectivePlanId,
       programId: effectiveProgramId,
       programDayId: effectiveProgramDayId,
       isFree: state?.free,
     }
     saveSession(data)
-  }, [groups, sessionId, showSummary, effectivePlanId, effectiveProgramId, effectiveProgramDayId, state?.free])
+  }, [groups, sessionId, showSummary, effectiveProgramId, effectiveProgramDayId, state?.free])
 
-  const sessionLabel = plan?.name ?? programDay?.label ?? 'Free Session'
+  const sessionLabel = programDay?.label ?? program?.name ?? 'Free Session'
 
   function formatTime(s: number) {
     const m = Math.floor(s / 60)
@@ -234,7 +228,6 @@ export function ActiveSession() {
     const allSets = groups.flatMap((g) => g.sets)
     const session = {
       id: sessionId!,
-      planId: plan?.id,
       programId: program?.id,
       programDayId: programDay?.id,
       date: new Date().toISOString(),
@@ -253,7 +246,6 @@ export function ActiveSession() {
     const allSets = groups.flatMap((g) => g.sets)
     const session = {
       id: sessionId!,
-      planId: plan?.id,
       programId: program?.id,
       programDayId: programDay?.id,
       date: new Date().toISOString(),

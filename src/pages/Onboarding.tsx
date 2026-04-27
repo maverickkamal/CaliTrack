@@ -34,13 +34,18 @@ export function Onboarding() {
     setStep(3)
   }
 
-  function finishWithPlan() {
+  function finishWithCustomProgram() {
     completeOnboarding()
-    navigate('/plans/new')
+    navigate('/programs/new')
   }
 
   function finishWithProgram(programId: string) {
     enrollInProgram(programId)
+    completeOnboarding()
+    navigate('/')
+  }
+
+  function finishFreestyle() {
     completeOnboarding()
     navigate('/')
   }
@@ -62,7 +67,7 @@ export function Onboarding() {
             Train like you mean it
           </p>
           <p className="text-[var(--color-muted)] text-center text-sm max-w-xs mb-10">
-            Your personal calisthenics tracker. Build plans, log sessions, track progress — all offline.
+            Your personal calisthenics tracker. Build programs, log sessions, track progress — all offline.
           </p>
           <button
             type="button"
@@ -181,14 +186,27 @@ export function Onboarding() {
 
           <button
             type="button"
-            onClick={finishWithPlan}
-            className="card-surface-interactive w-full p-5 text-left mb-4"
+            onClick={finishWithCustomProgram}
+            className="card-surface-interactive w-full p-5 text-left mb-3"
           >
             <p className="text-base font-semibold mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-              Build my own plan
+              Build my own program
             </p>
             <p className="text-sm text-[var(--color-muted)]">
-              Create a custom workout from scratch with exercises you choose.
+              Create a custom multi-day program from scratch with exercises you choose.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={finishFreestyle}
+            className="card-surface-interactive w-full p-4 text-left mb-4"
+          >
+            <p className="text-sm font-semibold mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>
+              Just freestyle
+            </p>
+            <p className="text-xs text-[var(--color-muted)]">
+              Skip for now — start free sessions and pick a program later.
             </p>
           </button>
 

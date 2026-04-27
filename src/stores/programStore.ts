@@ -5,20 +5,37 @@ import { preloadedPrograms } from '../data/programs'
 
 interface ProgramState {
   userPrograms: UserProgram[]
+  /** Custom or overridden programs. If id matches a preloaded program, this entry overrides it. */
+  customPrograms: Program[]
   enrollInProgram: (programId: string) => void
   completeDay: (dayId: string) => void
   pauseProgram: (userProgramId: string) => void
   resumeProgram: (userProgramId: string) => void
   unenroll: (userProgramId: string) => void
+  addProgram: (program: Program) => void
+  updateProgram: (id: string, program: Program) => void
+  deleteProgram: (id: string) => void
+  isBuiltIn: (id: string) => boolean
+  isCustom: (id: string) => boolean
+  hasOverride: (id: string) => boolean
+  resetToBuiltIn: (id: string) => void
   getActiveUserProgram: () => UserProgram | undefined
   getAllPrograms: () => Program[]
   getProgramById: (id: string) => Program | undefined
+}
+
+function mergePrograms(custom: Program[]): Program[] {
+  const customById = new Map(custom.map((c) => [c.id, c]))
+  const merged = preloadedPrograms.map((p) => customById.get(p.id) ?? p)
+  const extras = custom.filter((c) => !preloadedPrograms.some((p) => p.id === c.id))
+  return [...merged, ...extras]
 }
 
 export const useProgramStore = create<ProgramState>()(
   persist(
     (set, get) => ({
       userPrograms: [],
+      customPrograms: [],
 
       enrollInProgram: (programId) => {
         set((s) => ({
@@ -44,7 +61,7 @@ export const useProgramStore = create<ProgramState>()(
         const active = state.userPrograms.find((up) => up.status === 'active')
         if (!active) return
 
-        const program = preloadedPrograms.find((p) => p.id === active.programId)
+        const program = state.getProgramById(active.programId)
         if (!program) return
 
         const alreadyDone = active.completedDays.includes(dayId)
@@ -105,11 +122,51 @@ export const useProgramStore = create<ProgramState>()(
           userPrograms: s.userPrograms.filter((up) => up.id !== id),
         })),
 
+      addProgram: (program) =>
+        set((s) => ({ customPrograms: [...s.customPrograms, program] })),
+
+      updateProgram: (id, program) =>
+        set((s) => {
+          const exists = s.customPrograms.some((p) => p.id === id)
+          if (exists) {
+            return {
+              customPrograms: s.customPrograms.map((p) => (p.id === id ? program : p)),
+            }
+          }
+          return { customPrograms: [...s.customPrograms, program] }
+        }),
+
+      deleteProgram: (id) =>
+        set((s) => {
+          const isBuiltIn = preloadedPrograms.some((p) => p.id === id)
+          if (isBuiltIn) {
+            return {
+              customPrograms: s.customPrograms.filter((p) => p.id !== id),
+              userPrograms: s.userPrograms,
+            }
+          }
+          return {
+            customPrograms: s.customPrograms.filter((p) => p.id !== id),
+            userPrograms: s.userPrograms.filter((up) => up.programId !== id),
+          }
+        }),
+
+      resetToBuiltIn: (id) =>
+        set((s) => ({ customPrograms: s.customPrograms.filter((p) => p.id !== id) })),
+
+      isBuiltIn: (id) => preloadedPrograms.some((p) => p.id === id),
+      isCustom: (id) => !preloadedPrograms.some((p) => p.id === id),
+      hasOverride: (id) => get().customPrograms.some((p) => p.id === id),
+
       getActiveUserProgram: () => get().userPrograms.find((up) => up.status === 'active'),
 
-      getAllPrograms: () => preloadedPrograms,
+      getAllPrograms: () => mergePrograms(get().customPrograms),
 
-      getProgramById: (id) => preloadedPrograms.find((p) => p.id === id),
+      getProgramById: (id) => {
+        const custom = get().customPrograms.find((p) => p.id === id)
+        if (custom) return custom
+        return preloadedPrograms.find((p) => p.id === id)
+      },
     }),
     { name: 'calitrack_user_programs' },
   ),

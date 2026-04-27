@@ -6,12 +6,10 @@ import { Home } from './pages/Home'
 import { LogNew } from './pages/LogNew'
 import { ActiveSession } from './pages/ActiveSession'
 import { SessionDetail } from './pages/SessionDetail'
-import { Plans } from './pages/Plans'
-import { PlanNew } from './pages/PlanNew'
-import { PlanDetail } from './pages/PlanDetail'
-import { PlanEdit } from './pages/PlanEdit'
 import { Programs } from './pages/Programs'
 import { ProgramDetail } from './pages/ProgramDetail'
+import { ProgramNew } from './pages/ProgramNew'
+import { ProgramEdit } from './pages/ProgramEdit'
 import { Progress } from './pages/Progress'
 import { ExerciseProgress } from './pages/ExerciseProgress'
 import { Settings } from './pages/Settings'
@@ -51,15 +49,16 @@ export function App() {
         <Route path="/log/new" element={<LogNew />} />
         <Route path="/log/:sessionId" element={<ActiveSession />} />
         <Route path="/session/:sessionId" element={<SessionDetail />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/plans/new" element={<PlanNew />} />
-        <Route path="/plans/:planId" element={<PlanDetail />} />
-        <Route path="/plans/:planId/edit" element={<PlanEdit />} />
         <Route path="/programs" element={<Programs />} />
+        <Route path="/programs/new" element={<ProgramNew />} />
         <Route path="/programs/:programId" element={<ProgramDetail />} />
+        <Route path="/programs/:programId/edit" element={<ProgramEdit />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/progress/:exerciseId" element={<ExerciseProgress />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Legacy redirects from removed plan routes */}
+        <Route path="/plans" element={<Navigate to="/programs" replace />} />
+        <Route path="/plans/*" element={<Navigate to="/programs" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

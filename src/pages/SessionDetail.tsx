@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSessionStore } from '../stores/sessionStore'
 import { useExerciseStore } from '../stores/exerciseStore'
-import { usePlanStore } from '../stores/planStore'
+import { useProgramStore } from '../stores/programStore'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { MOOD_MAP } from '../types'
 import { useState } from 'react'
@@ -12,7 +12,7 @@ export function SessionDetail() {
   const session = useSessionStore((s) => s.getSessionById)(sessionId!)
   const deleteSession = useSessionStore((s) => s.deleteSession)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
-  const getPlanById = usePlanStore((s) => s.getPlanById)
+  const getProgramById = useProgramStore((s) => s.getProgramById)
   const [showConfirm, setShowConfirm] = useState(false)
 
   if (!session) return (
@@ -22,7 +22,11 @@ export function SessionDetail() {
     </div>
   )
 
-  const plan = session.planId ? getPlanById(session.planId) : undefined
+  const program = session.programId ? getProgramById(session.programId) : undefined
+  const programDay = program && session.programDayId
+    ? program.weeks.flatMap((w) => w.days).find((d) => d.id === session.programDayId)
+    : undefined
+  const sessionLabel = programDay?.label ?? program?.name ?? 'Free Session'
   const exerciseIds = [...new Set(session.sets.map((s) => s.exerciseId))]
 
   return (
@@ -33,7 +37,7 @@ export function SessionDetail() {
         </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-            {plan?.name ?? 'Free Session'}
+            {sessionLabel}
           </h1>
           <p className="text-xs text-[var(--color-muted)]">
             {new Date(session.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}

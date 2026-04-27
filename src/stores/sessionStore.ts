@@ -8,7 +8,6 @@ interface SessionState {
   deleteSession: (id: string) => void
   getSessionById: (id: string) => Session | undefined
   getSessionsByExercise: (exerciseId: string) => Session[]
-  getSessionsByPlan: (planId: string) => Session[]
   detectPRs: (newSession: Session) => string[]
 }
 
@@ -27,7 +26,6 @@ export const useSessionStore = create<SessionState>()(
       getSessionById: (id) => get().sessions.find((s) => s.id === id),
       getSessionsByExercise: (exerciseId) =>
         get().sessions.filter((s) => s.sets.some((set) => set.exerciseId === exerciseId)),
-      getSessionsByPlan: (planId) => get().sessions.filter((s) => s.planId === planId),
 
       detectPRs: (newSession) => {
         const { sessions } = get()

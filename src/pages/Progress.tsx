@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useSessionStore } from '../stores/sessionStore'
 import { useExerciseStore } from '../stores/exerciseStore'
-import { usePlanStore } from '../stores/planStore'
+import { useProgramStore } from '../stores/programStore'
 import { MOOD_MAP } from '../types'
 import { ChevronRight, Trophy } from 'lucide-react'
 import { useState } from 'react'
@@ -10,7 +10,7 @@ export function Progress() {
   const navigate = useNavigate()
   const sessions = useSessionStore((s) => s.sessions)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
-  const getPlanById = usePlanStore((s) => s.getPlanById)
+  const getProgramById = useProgramStore((s) => s.getProgramById)
   const [tab, setTab] = useState<'sessions' | 'exercises'>('sessions')
 
   const exerciseIds = [...new Set(sessions.flatMap((s) => s.sets.map((set) => set.exerciseId)))]
@@ -44,7 +44,11 @@ export function Progress() {
             <p className="text-center text-[var(--color-muted)] py-12">No sessions yet. Complete a workout to see your history.</p>
           )}
           {sessions.map((s) => {
-            const plan = s.planId ? getPlanById(s.planId) : undefined
+            const program = s.programId ? getProgramById(s.programId) : undefined
+            const programDay = program && s.programDayId
+              ? program.weeks.flatMap((w) => w.days).find((d) => d.id === s.programDayId)
+              : undefined
+            const sessionLabel = programDay?.label ?? program?.name ?? 'Free Session'
             const completedSets = s.sets.filter((set) => set.completed)
             return (
               <div
@@ -56,7 +60,7 @@ export function Progress() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {plan?.name ?? 'Free Session'}
+                        {sessionLabel}
                       </p>
                       {s.mood && <span className="text-sm">{MOOD_MAP[s.mood].emoji}</span>}
                     </div>

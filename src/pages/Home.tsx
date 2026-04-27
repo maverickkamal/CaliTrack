@@ -3,9 +3,8 @@ import { useUserStore } from '../stores/userStore'
 import { useSessionStore } from '../stores/sessionStore'
 import { useProgramStore } from '../stores/programStore'
 import { useExerciseStore } from '../stores/exerciseStore'
-import { usePlanStore } from '../stores/planStore'
 import { Coachmarks } from '../components/Coachmarks'
-import { Play, Flame, TrendingUp, ChevronRight, Settings, RotateCcw } from 'lucide-react'
+import { Play, Flame, TrendingUp, ChevronRight, Settings, RotateCcw, BookOpen } from 'lucide-react'
 import { MOOD_MAP } from '../types'
 
 function getStreak(sessions: { date: string }[], trainingDaysPerWeek: number): number {
@@ -60,8 +59,6 @@ export function Home() {
   const getProgramById = useProgramStore((s) => s.getProgramById)
   const getExerciseById = useExerciseStore((s) => s.getExerciseById)
 
-  const getPlanByIdFn = usePlanStore((s) => s.getPlanById)
-
   const activeUp = getActiveUserProgram()
   const activeProgram = activeUp ? getProgramById(activeUp.programId) : undefined
 
@@ -70,9 +67,11 @@ export function Home() {
       const raw = sessionStorage.getItem('calitrack-active-session')
       if (!raw) return null
       const data = JSON.parse(raw)
-      return data as { sessionId: string; planId?: string; programId?: string; programDayId?: string; startTime: number }
+      return data as { sessionId: string; programId?: string; programDayId?: string; startTime: number }
     } catch { return null }
   })()
+
+  const pendingProgram = pendingSession?.programId ? getProgramById(pendingSession.programId) : undefined
 
   const currentDay = activeProgram && activeUp
     ? activeProgram.weeks
@@ -83,7 +82,6 @@ export function Home() {
   const streak = getStreak(sessions, user.trainingDaysPerWeek)
   const volume = getWeeklyVolume(sessions)
   const lastSession = sessions[0]
-  const lastPlanId = lastSession?.planId
 
   return (
     <div className="px-4 pt-6 pb-4">
@@ -95,10 +93,9 @@ export function Home() {
           type="button"
           onClick={() => {
             const state: Record<string, string | boolean> = {}
-            if (pendingSession.planId) state.planId = pendingSession.planId
             if (pendingSession.programId) state.programId = pendingSession.programId
             if (pendingSession.programDayId) state.programDayId = pendingSession.programDayId
-            if (!pendingSession.planId && !pendingSession.programId) state.free = true
+            if (!pendingSession.programId) state.free = true
             navigate(`/log/${pendingSession.sessionId}`, { state })
           }}
           className="w-full p-4 rounded-2xl bg-[var(--color-accent-amber)]/10 border border-[var(--color-accent-amber)]/25 flex items-center gap-3 mb-1 active:scale-[0.99] transition-transform"
@@ -111,8 +108,8 @@ export function Home() {
               Session in progress
             </p>
             <p className="text-xs text-[var(--color-muted)] truncate">
-              {pendingSession.planId
-                ? getPlanByIdFn(pendingSession.planId)?.name ?? 'Plan session'
+              {pendingProgram
+                ? pendingProgram.name
                 : pendingSession.programId
                   ? 'Program session'
                   : 'Free session'}
@@ -134,14 +131,24 @@ export function Home() {
             {user.name || 'Athlete'}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/settings')}
-          className="w-11 h-11 rounded-2xl card-surface flex items-center justify-center text-[var(--color-muted)] transition-[transform,box-shadow,color] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:text-[var(--color-fg)] active:scale-95"
-          aria-label="Settings"
-        >
-          <Settings size={20} strokeWidth={1.75} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/programs')}
+            className="w-11 h-11 rounded-2xl card-surface flex items-center justify-center text-[var(--color-muted)] transition-[transform,box-shadow,color] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:text-[var(--color-fg)] active:scale-95"
+            aria-label="Programs"
+          >
+            <BookOpen size={20} strokeWidth={1.75} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="w-11 h-11 rounded-2xl card-surface flex items-center justify-center text-[var(--color-muted)] transition-[transform,box-shadow,color] duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:text-[var(--color-fg)] active:scale-95"
+            aria-label="Settings"
+          >
+            <Settings size={20} strokeWidth={1.75} />
+          </button>
+        </div>
       </div>
 
       {/* Today's Program Day */}
@@ -212,7 +219,7 @@ export function Home() {
       {/* Quick Start */}
       <button
         type="button"
-        onClick={() => navigate('/log/new', lastPlanId ? { state: { planId: lastPlanId } } : undefined)}
+        onClick={() => navigate('/log/new')}
         className="group card-surface-interactive w-full p-4 flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-3">
@@ -221,9 +228,7 @@ export function Home() {
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Quick Start</p>
-            <p className="text-xs text-[var(--color-muted)]">
-              {lastPlanId ? 'Resume last workout' : 'Start a new session'}
-            </p>
+            <p className="text-xs text-[var(--color-muted)]">Start a new session</p>
           </div>
         </div>
         <ChevronRight size={18} className="text-[var(--color-muted)] transition-transform duration-[200ms] ease-out group-hover:translate-x-0.5" />
