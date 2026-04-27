@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { usePlanStore } from '../stores/planStore'
 import { useSessionStore } from '../stores/sessionStore'
-import { Plus, ChevronRight, Trash2 } from 'lucide-react'
+import { Plus, ChevronRight, Trash2, Pencil } from 'lucide-react'
 import { useState } from 'react'
 
 export function Plans() {
@@ -51,6 +51,13 @@ export function Plans() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/plans/${plan.id}/edit`) }}
+                  className="p-2 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-muted)] hover:text-[var(--color-primary)] transition-colors"
+                  aria-label="Edit plan"
+                >
+                  <Pencil size={16} />
+                </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete(plan.id) }}
                   className="p-2 rounded-lg hover:bg-[var(--color-accent-red)]/10 text-[var(--color-muted)] hover:text-[var(--color-accent-red)] transition-colors"
