@@ -5,13 +5,15 @@ import { registerSW } from 'virtual:pwa-register'
 import { App } from './App'
 import './index.css'
 
-const CACHE_RESET_VERSION = 'calitrack-pwa-cache-reset-2026-04-27-2'
+declare const __APP_VERSION__: string
+
+const CACHE_RESET_KEY = 'calitrack-pwa-build-version'
 
 async function clearOldPwaCacheOnce() {
   if (!('serviceWorker' in navigator) || !('caches' in window)) return
-  if (localStorage.getItem(CACHE_RESET_VERSION) === 'done') return
+  if (localStorage.getItem(CACHE_RESET_KEY) === __APP_VERSION__) return
 
-  localStorage.setItem(CACHE_RESET_VERSION, 'done')
+  localStorage.setItem(CACHE_RESET_KEY, __APP_VERSION__)
 
   const registrations = await navigator.serviceWorker.getRegistrations()
   await Promise.all(registrations.map((registration) => registration.unregister()))
@@ -23,7 +25,7 @@ async function clearOldPwaCacheOnce() {
 }
 
 clearOldPwaCacheOnce().catch(() => {
-  localStorage.setItem(CACHE_RESET_VERSION, 'done')
+  localStorage.setItem(CACHE_RESET_KEY, __APP_VERSION__)
 })
 
 const updateSW = registerSW({
