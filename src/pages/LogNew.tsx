@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useProgramStore } from '../stores/programStore'
 import { ArrowLeft, Dumbbell, Play, BookOpen, ChevronRight } from 'lucide-react'
+import { getScheduledProgramDayForDate, WEEKDAY_LABELS } from '../lib/programSchedule'
 
 export function LogNew() {
   const navigate = useNavigate()
@@ -27,11 +28,7 @@ export function LogNew() {
 
   const activeUp = getActiveUserProgram()
   const activeProgram = activeUp ? getProgramById(activeUp.programId) : undefined
-  const currentDay = activeProgram
-    ? activeProgram.weeks
-        .find((w) => w.weekNumber === activeUp!.currentWeek)
-        ?.days.find((d) => d.dayNumber === activeUp!.currentDay)
-    : undefined
+  const currentDay = getScheduledProgramDayForDate(activeProgram, activeUp, new Date())
 
   return (
     <div className="px-4 pt-6 pb-4 animate-fade-in">
@@ -73,7 +70,9 @@ export function LogNew() {
           </div>
           <div className="text-left flex-1 min-w-0">
             <p className="text-sm font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>{currentDay.label}</p>
-            <p className="text-xs text-[var(--color-muted)] truncate">{activeProgram.name} · Week {activeUp!.currentWeek}</p>
+            <p className="text-xs text-[var(--color-muted)] truncate">
+              {activeProgram.name} · Week {activeUp!.currentWeek} · {WEEKDAY_LABELS[currentDay.weekday]}
+            </p>
           </div>
         </button>
       )}

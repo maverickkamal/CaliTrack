@@ -70,16 +70,37 @@ export const useProgramStore = create<ProgramState>()(
         const currentWeek = program.weeks.find((w) => w.weekNumber === active.currentWeek)
         if (!currentWeek) return
 
-        const currentDayIndex = currentWeek.days.findIndex((d) => d.id === dayId)
+        const completedDays = [...active.completedDays, dayId]
+        const completedSet = new Set(completedDays)
+        const completedDay = currentWeek.days.find((d) => d.id === dayId)
+        if (!completedDay) return
+
         let nextWeek = active.currentWeek
         let nextDay = active.currentDay
         let status: UserProgram['status'] = 'active'
 
-        if (currentDayIndex < currentWeek.days.length - 1) {
-          nextDay = currentWeek.days[currentDayIndex + 1].dayNumber
+        // Progress only moves to next week when ALL days in the current week are completed.
+        // This allows non-serial day order (e.g. complete Day B before Day A) without skipping weeks.
+        const pendingInCurrentWeek = currentWeek.days
+          .filter((d) => !completedSet.has(d.id))
+          .sort((a, b) => {
+            const aw = typeof a.weekday === 'number' && !Number.isNaN(a.weekday) ? ((a.weekday % 7) + 7) % 7 : 1
+            const bw = typeof b.weekday === 'number' && !Number.isNaN(b.weekday) ? ((b.weekday % 7) + 7) % 7 : 1
+            if (aw !== bw) return aw - bw
+            return a.dayNumber - b.dayNumber
+          })
+
+        if (pendingInCurrentWeek.length > 0) {
+          nextDay = pendingInCurrentWeek[0].dayNumber
         } else if (active.currentWeek < program.durationWeeks) {
-          nextWeek = active.currentWeek + 1
-          nextDay = 1
+          const upcomingWeekNumber = active.currentWeek + 1
+          const upcomingWeek = program.weeks.find((w) => w.weekNumber === upcomingWeekNumber)
+          if (upcomingWeek && upcomingWeek.days.length > 0) {
+            nextWeek = upcomingWeekNumber
+            nextDay = upcomingWeek.days[0].dayNumber
+          } else {
+            status = 'completed'
+          }
         } else {
           status = 'completed'
         }
@@ -89,7 +110,7 @@ export const useProgramStore = create<ProgramState>()(
             up.id === active.id
               ? {
                   ...up,
-                  completedDays: [...up.completedDays, dayId],
+                  completedDays,
                   currentWeek: nextWeek,
                   currentDay: nextDay,
                   status,

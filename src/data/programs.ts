@@ -7,14 +7,16 @@ function makeDayId(progId: string, week: number, day: number) {
 function makeWeeks(
   progId: string,
   numWeeks: number,
-  daysTemplate: { label: string; exercises: { exerciseId: string; targetSets: number; targetReps: string; restSeconds: number }[] }[],
+  daysTemplate: { label: string; weekday?: number; exercises: { exerciseId: string; targetSets: number; targetReps: string; restSeconds: number }[] }[],
 ) {
+  const defaultWeekdayOrder = [1, 3, 5, 0, 2, 4, 6]
   return Array.from({ length: numWeeks }, (_, wi) => ({
     weekNumber: wi + 1,
     days: daysTemplate.map((dt, di) => ({
       id: makeDayId(progId, wi + 1, di + 1),
       dayNumber: di + 1,
       label: dt.label,
+      weekday: dt.weekday ?? defaultWeekdayOrder[di % defaultWeekdayOrder.length],
       exercises: dt.exercises.map((e) => ({ ...e })),
     })),
   }))

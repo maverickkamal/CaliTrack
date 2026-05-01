@@ -6,9 +6,11 @@ import { ExercisePicker } from '../components/ExercisePicker'
 import { PillSelect } from '../components/PillSelect'
 import { ArrowLeft, Plus, GripVertical, X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Exercise, Program, ProgramDay, ProgramDayExercise } from '../types'
+import { WEEKDAY_LABELS } from '../lib/programSchedule'
 
 export interface ProgramFormDay {
   label: string
+  weekday: number
   exercises: ProgramDayExercise[]
 }
 
@@ -49,9 +51,17 @@ export function ProgramForm({ initial, title, saveLabel = 'Save Program', onSave
   }
 
   function addDay() {
+    const defaultWeekdayOrder = [1, 3, 5, 0, 2, 4, 6]
     setValues((v) => ({
       ...v,
-      days: [...v.days, { label: `Day ${String.fromCharCode(65 + v.days.length)}`, exercises: [] }],
+      days: [
+        ...v.days,
+        {
+          label: `Day ${String.fromCharCode(65 + v.days.length)}`,
+          weekday: defaultWeekdayOrder[v.days.length % defaultWeekdayOrder.length],
+          exercises: [],
+        },
+      ],
     }))
     setOpenDayIdx(values.days.length)
   }
@@ -242,6 +252,16 @@ export function ProgramForm({ initial, title, saveLabel = 'Save Program', onSave
                   placeholder="Day name"
                   className="flex-1 min-w-0 px-2 py-1.5 bg-[var(--color-bg)] rounded-lg text-sm border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)]"
                 />
+                <select
+                  value={day.weekday}
+                  onChange={(e) => updateDay(dayIdx, { weekday: Number(e.target.value) })}
+                  className="px-2 py-1.5 bg-[var(--color-bg)] rounded-lg text-xs border border-[var(--color-border)] focus:outline-none focus:border-[var(--color-primary)]"
+                  aria-label="Scheduled weekday"
+                >
+                  {WEEKDAY_LABELS.map((label, idx) => (
+                    <option key={label} value={idx}>{label}</option>
+                  ))}
+                </select>
                 <button
                   onClick={() => setOpenDayIdx(isOpen ? null : dayIdx)}
                   className="w-8 h-8 rounded-lg bg-[var(--color-bg)] flex items-center justify-center text-[var(--color-muted)]"
@@ -263,7 +283,7 @@ export function ProgramForm({ initial, title, saveLabel = 'Save Program', onSave
                   <p className="text-xs text-[var(--color-muted)]">
                     {day.exercises.length === 0
                       ? 'No exercises yet'
-                      : `${day.exercises.length} exercise${day.exercises.length === 1 ? '' : 's'}`}
+                      : `${WEEKDAY_LABELS[day.weekday]} · ${day.exercises.length} exercise${day.exercises.length === 1 ? '' : 's'}`}
                   </p>
                 </div>
               )}
@@ -406,6 +426,7 @@ export function buildProgram(id: string, values: ProgramFormValues, isCustom: bo
     id: `${id}-d${di + 1}`,
     dayNumber: di + 1,
     label: d.label.trim() || `Day ${di + 1}`,
+    weekday: d.weekday,
     exercises: d.exercises.map((e) => ({ ...e })),
   }))
 
@@ -431,9 +452,11 @@ export function buildProgram(id: string, values: ProgramFormValues, isCustom: bo
 }
 
 export function programToFormValues(p: Program): ProgramFormValues {
+  const defaultWeekdayOrder = [1, 3, 5, 0, 2, 4, 6]
   const week1 = p.weeks.find((w) => w.weekNumber === 1) ?? p.weeks[0]
   const days: ProgramFormDay[] = (week1?.days ?? []).map((d) => ({
     label: d.label,
+    weekday: d.weekday ?? defaultWeekdayOrder[(d.dayNumber - 1) % defaultWeekdayOrder.length],
     exercises: d.exercises.map((e) => ({ ...e })),
   }))
   return {

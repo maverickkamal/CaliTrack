@@ -70,6 +70,8 @@ export interface ProgramDay {
   id: string
   dayNumber: number
   label: string
+  /** 0 = Sunday ... 6 = Saturday */
+  weekday: number
   exercises: ProgramDayExercise[]
 }
 

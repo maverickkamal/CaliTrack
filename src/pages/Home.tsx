@@ -6,6 +6,7 @@ import { useExerciseStore } from '../stores/exerciseStore'
 import { Coachmarks } from '../components/Coachmarks'
 import { Play, Flame, TrendingUp, ChevronRight, Settings, RotateCcw, BookOpen } from 'lucide-react'
 import { MOOD_MAP } from '../types'
+import { getScheduledProgramDayForDate, WEEKDAY_LABELS } from '../lib/programSchedule'
 
 function getStreak(sessions: { date: string }[], trainingDaysPerWeek: number): number {
   if (sessions.length === 0 || trainingDaysPerWeek === 0) return 0
@@ -73,11 +74,7 @@ export function Home() {
 
   const pendingProgram = pendingSession?.programId ? getProgramById(pendingSession.programId) : undefined
 
-  const currentDay = activeProgram && activeUp
-    ? activeProgram.weeks
-        .find((w) => w.weekNumber === activeUp.currentWeek)
-        ?.days.find((d) => d.dayNumber === activeUp.currentDay)
-    : undefined
+  const currentDay = getScheduledProgramDayForDate(activeProgram, activeUp, new Date())
 
   const streak = getStreak(sessions, user.trainingDaysPerWeek)
   const volume = getWeeklyVolume(sessions)
@@ -165,6 +162,9 @@ export function Home() {
               </p>
               <p className="text-lg font-semibold mt-0.5" style={{ fontFamily: 'var(--font-heading)' }}>
                 {currentDay.label}
+              </p>
+              <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                {WEEKDAY_LABELS[currentDay.weekday]}
               </p>
             </div>
             <div className="text-right">
